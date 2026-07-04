@@ -1,0 +1,226 @@
+name: account_intelligence_360
+description: '360-degree account intelligence semantic view for AEs and SDRs. Combines
+  Salesforce account data with multi-source enrichment including industry classification
+  (MDM-conformed from 7+ sources), employee count (consensus-scored), Crunchbase firmographic
+  linkage, and SAI account priority scoring. Primary use cases: account segmentation,
+  ICP analysis, enrichment coverage reporting, and prospect prioritization.'
+tables:
+  - name: SFDC_ACCOUNT_CONSOLIDATED_INDUSTRY
+    base_table:
+      database: MDM
+      schema: MDM_INTERFACES
+      table: SFDC_ACCOUNT_CONSOLIDATED_INDUSTRY
+    primary_key:
+      columns:
+        - SOURCE_SYSTEM_ENTITY_ID
+    dimensions:
+      - name: SOURCE_SYSTEM_ENTITY_ID
+        expr: SOURCE_SYSTEM_ENTITY_ID
+        data_type: VARCHAR
+      - name: ACCOUNT_TYPE
+        expr: ACCOUNT_TYPE
+        data_type: VARCHAR
+      - name: ACCOUNT_NAME
+        expr: ACCOUNT_NAME
+        data_type: VARCHAR
+      - name: SFDC_INDUSTRY
+        expr: SFDC_INDUSTRY
+        data_type: VARCHAR
+      - name: SFDC_SUBINDUSTRY
+        expr: SFDC_SUBINDUSTRY
+        data_type: VARCHAR
+      - name: GPU_INDUSTRY
+        expr: GPU_INDUSTRY
+        data_type: VARCHAR
+      - name: GPU_SUBINDUSTRY
+        expr: GPU_SUBINDUSTRY
+        data_type: VARCHAR
+      - name: FINAL_INDUSTRY
+        expr: FINAL_INDUSTRY
+        data_type: VARCHAR
+      - name: FINAL_SUBINDUSTRY
+        expr: FINAL_SUBINDUSTRY
+        data_type: VARCHAR
+      - name: FINAL_LOGIC
+        expr: FINAL_LOGIC
+        data_type: VARCHAR
+      - name: CB_INDUSTRY
+        expr: CB_INDUSTRY
+        data_type: VARCHAR
+      - name: CB_SUBINDUSTRY
+        expr: CB_SUBINDUSTRY
+        data_type: VARCHAR
+  - name: SFDC_ACCOUNT_CONSOLIDATED_EMPLOYEE_COUNT
+    base_table:
+      database: MDM
+      schema: MDM_INTERFACES
+      table: SFDC_ACCOUNT_CONSOLIDATED_EMPLOYEE_COUNT
+    primary_key:
+      columns:
+        - SOURCE_SYSTEM_ENTITY_ID
+    dimensions:
+      - name: SOURCE_SYSTEM_ENTITY_ID
+        expr: SOURCE_SYSTEM_ENTITY_ID
+        data_type: VARCHAR
+      - name: ACCOUNT_TYPE
+        expr: ACCOUNT_TYPE
+        data_type: VARCHAR
+      - name: ACCOUNT_NAME
+        expr: ACCOUNT_NAME
+        data_type: VARCHAR
+      - name: SFDC_EMPLOYEE_COUNT
+        expr: SFDC_EMPLOYEE_COUNT
+        data_type: VARCHAR
+      - name: GPU_EMPLOYEE_COUNT
+        expr: GPU_EMPLOYEE_COUNT
+        data_type: VARCHAR
+      - name: DNB_EMPLOYEE_COUNT
+        expr: DNB_EMPLOYEE_COUNT
+        data_type: VARCHAR
+      - name: FINAL_EMPLOYEE_COUNT
+        expr: FINAL_EMPLOYEE_COUNT
+        data_type: VARCHAR
+      - name: FINAL_LOGIC
+        expr: FINAL_LOGIC
+        data_type: VARCHAR
+      - name: CB_EMPLOYEE_COUNT
+        expr: CB_EMPLOYEE_COUNT
+        data_type: VARCHAR
+  - name: CRUNCHBASE_MAP_TO_ACCOUNT_SFDC
+    description: Crunchbase data mapping to Snowflake instance of SFDC. This map is
+      based on the logic maintained by MDM
+    base_table:
+      database: MDM
+      schema: MDM_INTERFACES
+      table: CRUNCHBASE_MAP_TO_ACCOUNT_SFDC
+    dimensions:
+      - name: ACCOUNT_ID
+        description: Account ID assigned by MDM. This is an internal key
+        expr: ACCOUNT_ID
+        data_type: VARCHAR
+      - name: SOURCE_SYSTEM_ENTITY_ID
+        description: Entity ID in the source system. For this object this is a SFDC
+          account ID
+        expr: SOURCE_SYSTEM_ENTITY_ID
+        data_type: VARCHAR
+      - name: ACCOUNT_TYPE
+        description: Salesforce account type
+        expr: ACCOUNT_TYPE
+        data_type: VARCHAR
+      - name: ACCOUNT_SUBTYPE
+        description: Salesforce account subtype
+        expr: ACCOUNT_SUBTYPE
+        data_type: VARCHAR
+      - name: ACCOUNT_ID_CRUNCHBASE
+        description: Crunchbase ID - UUID in the Organization object.
+        expr: ACCOUNT_ID_CRUNCHBASE
+        data_type: VARCHAR
+  - name: SAI_PILOT_TECH_STACK
+    base_table:
+      database: MDM
+      schema: MDM_INTERFACES
+      table: SAI_PILOT_TECH_STACK
+    primary_key:
+      columns:
+        - OBJECT_ID
+    dimensions:
+      - name: OBJECT_ID
+        expr: OBJECT_ID
+        data_type: VARCHAR
+      - name: NAME
+        expr: NAME
+        data_type: VARCHAR
+      - name: ACCOUNT_TYPE_SAI
+        expr: '"TYPE"'
+        data_type: VARCHAR
+      - name: PROSPECT_TIER_C
+        expr: PROSPECT_TIER_C
+        data_type: VARCHAR
+      - name: INDUSTRY
+        expr: INDUSTRY
+        data_type: VARCHAR
+      - name: CLEAN_ACCOUNT_TYPE_C
+        expr: CLEAN_ACCOUNT_TYPE_C
+        data_type: VARCHAR
+    facts:
+      - name: APS_C
+        expr: APS_C
+        data_type: FLOAT
+  - name: CUSTOMER_PARTY_ACCOUNT_MAP_SFDC
+    description: "This table provides mapping between SnowMesh party_id and SFDC\
+      \ customers.   \n"
+    base_table:
+      database: MDM
+      schema: MDM_INTERFACES
+      table: CUSTOMER_PARTY_ACCOUNT_MAP_SFDC
+    dimensions:
+      - name: CUSTOMER_ID_WD
+        description: "Unique identifier for the customer in Workday. This field can\
+          \ be null in this interface.\n"
+        expr: CUSTOMER_ID_WD
+        data_type: VARCHAR
+      - name: SOURCE_SYSTEM_ENTITY_ID
+        description: "Unique identifier for the customer in SFDC: Salesforce account\
+          \ id.\n"
+        expr: SOURCE_SYSTEM_ENTITY_ID
+        data_type: VARCHAR
+      - name: PARTY_ID
+        description: "Unique identifier for SnowMesh party. This field can be null.\
+          \       \n"
+        expr: PARTY_ID
+        data_type: VARCHAR
+      - name: ACCOUNT_ID
+        description: Unique identifier for the account in SnowMesh.
+        expr: ACCOUNT_ID
+        data_type: VARCHAR
+relationships:
+  - name: CRUNCHBASE_TO_INDUSTRY
+    left_table: CRUNCHBASE_MAP_TO_ACCOUNT_SFDC
+    right_table: SFDC_ACCOUNT_CONSOLIDATED_INDUSTRY
+    join_type: inner
+    relationship_type: many_to_one
+    relationship_columns:
+      - left_column: SOURCE_SYSTEM_ENTITY_ID
+        right_column: SOURCE_SYSTEM_ENTITY_ID
+  - name: INDUSTRY_TO_SAI
+    left_table: SFDC_ACCOUNT_CONSOLIDATED_INDUSTRY
+    right_table: SAI_PILOT_TECH_STACK
+    join_type: inner
+    relationship_type: one_to_one
+    relationship_columns:
+      - left_column: SOURCE_SYSTEM_ENTITY_ID
+        right_column: OBJECT_ID
+  - name: INDUSTRY_TO_EMPLOYEE_COUNT
+    left_table: SFDC_ACCOUNT_CONSOLIDATED_INDUSTRY
+    right_table: SFDC_ACCOUNT_CONSOLIDATED_EMPLOYEE_COUNT
+    join_type: inner
+    relationship_type: one_to_one
+    relationship_columns:
+      - left_column: SOURCE_SYSTEM_ENTITY_ID
+        right_column: SOURCE_SYSTEM_ENTITY_ID
+verified_queries:
+  - name: accounts_by_industry_and_type
+    question: How many accounts are in each industry by account type?
+    sql: "SELECT FINAL_INDUSTRY, ACCOUNT_TYPE, COUNT(DISTINCT SOURCE_SYSTEM_ENTITY_ID) AS account_count FROM sfdc_account_consolidated_industry WHERE FINAL_INDUSTRY IS NOT NULL GROUP BY FINAL_INDUSTRY, ACCOUNT_TYPE ORDER BY account_count DESC"
+    verified_at: 1782967795
+    verified_by: Semantic Model Generator
+  - name: accounts_by_industry_subindustry
+    question: How many accounts do we have broken down by industry, subindustry, and account type?
+    sql: "SELECT ind.FINAL_INDUSTRY, ind.FINAL_SUBINDUSTRY, ind.ACCOUNT_TYPE, COUNT(DISTINCT ind.SOURCE_SYSTEM_ENTITY_ID) AS account_count FROM sfdc_account_consolidated_industry AS ind WHERE ind.FINAL_INDUSTRY IS NOT NULL GROUP BY ind.FINAL_INDUSTRY, ind.FINAL_SUBINDUSTRY, ind.ACCOUNT_TYPE ORDER BY ind.FINAL_INDUSTRY, account_count DESC"
+    verified_at: 1782967795
+    verified_by: Semantic Model Generator
+  - name: crunchbase_coverage_by_industry
+    question: Which industries have the most accounts with Crunchbase enrichment?
+    sql: "SELECT ind.FINAL_INDUSTRY, COUNT(DISTINCT ind.SOURCE_SYSTEM_ENTITY_ID) AS total_accounts, COUNT(DISTINCT cb.SOURCE_SYSTEM_ENTITY_ID) AS accounts_with_crunchbase FROM sfdc_account_consolidated_industry AS ind LEFT JOIN crunchbase_map_to_account_sfdc AS cb ON ind.SOURCE_SYSTEM_ENTITY_ID = cb.SOURCE_SYSTEM_ENTITY_ID WHERE ind.FINAL_INDUSTRY IS NOT NULL GROUP BY ind.FINAL_INDUSTRY ORDER BY total_accounts DESC"
+    verified_at: 1782967795
+    verified_by: Semantic Model Generator
+  - name: aps_score_by_industry_tier
+    question: What is the average APS score by industry and prospect tier?
+    sql: "SELECT ind.FINAL_INDUSTRY, sai.PROSPECT_TIER_C, COUNT(DISTINCT ind.SOURCE_SYSTEM_ENTITY_ID) AS account_count, AVG(sai.APS_C) AS avg_aps_score FROM sfdc_account_consolidated_industry AS ind LEFT JOIN sai_pilot_tech_stack AS sai ON ind.SOURCE_SYSTEM_ENTITY_ID = sai.OBJECT_ID WHERE sai.PROSPECT_TIER_C IS NOT NULL GROUP BY ind.FINAL_INDUSTRY, sai.PROSPECT_TIER_C ORDER BY avg_aps_score DESC"
+    verified_at: 1782967795
+    verified_by: Semantic Model Generator
+  - name: accounts_by_type_and_industry
+    question: What is the breakdown of accounts by account type and industry?
+    sql: "SELECT ind.ACCOUNT_TYPE, ind.FINAL_INDUSTRY, COUNT(DISTINCT ind.SOURCE_SYSTEM_ENTITY_ID) AS account_count FROM sfdc_account_consolidated_industry AS ind LEFT JOIN sfdc_account_consolidated_employee_count AS emp ON ind.SOURCE_SYSTEM_ENTITY_ID = emp.SOURCE_SYSTEM_ENTITY_ID WHERE ind.FINAL_INDUSTRY IS NOT NULL GROUP BY ind.ACCOUNT_TYPE, ind.FINAL_INDUSTRY ORDER BY account_count DESC"
+    verified_at: 1782967795
+    verified_by: Semantic Model Generator

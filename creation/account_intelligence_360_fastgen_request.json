@@ -1,0 +1,110 @@
+{
+  "json_proto": {
+    "name": "account_intelligence_360",
+    "database": "MDM",
+    "schema": "MDM_INTERFACES",
+    "tables": [
+      {
+        "database": "MDM",
+        "schema": "MDM_INTERFACES",
+        "table": "SFDC_ACCOUNT_CONSOLIDATED_INDUSTRY",
+        "columnNames": [
+          "SOURCE_SYSTEM_ENTITY_ID",
+          "ACCOUNT_TYPE",
+          "ACCOUNT_NAME",
+          "FINAL_INDUSTRY",
+          "FINAL_SUBINDUSTRY",
+          "FINAL_LOGIC",
+          "SFDC_INDUSTRY",
+          "SFDC_SUBINDUSTRY",
+          "CB_INDUSTRY",
+          "CB_SUBINDUSTRY",
+          "DNB_EMPLOYEE_COUNT",
+          "GPU_INDUSTRY",
+          "GPU_SUBINDUSTRY"
+        ]
+      },
+      {
+        "database": "MDM",
+        "schema": "MDM_INTERFACES",
+        "table": "SFDC_ACCOUNT_CONSOLIDATED_EMPLOYEE_COUNT",
+        "columnNames": [
+          "SOURCE_SYSTEM_ENTITY_ID",
+          "ACCOUNT_TYPE",
+          "ACCOUNT_NAME",
+          "FINAL_EMPLOYEE_COUNT",
+          "FINAL_LOGIC",
+          "SFDC_EMPLOYEE_COUNT",
+          "DNB_EMPLOYEE_COUNT",
+          "CB_EMPLOYEE_COUNT",
+          "GPU_EMPLOYEE_COUNT"
+        ]
+      },
+      {
+        "database": "MDM",
+        "schema": "MDM_INTERFACES",
+        "table": "CRUNCHBASE_MAP_TO_ACCOUNT_SFDC",
+        "columnNames": [
+          "ACCOUNT_ID",
+          "SOURCE_SYSTEM_ENTITY_ID",
+          "ACCOUNT_TYPE",
+          "ACCOUNT_SUBTYPE",
+          "ACCOUNT_ID_CRUNCHBASE"
+        ]
+      },
+      {
+        "database": "MDM",
+        "schema": "MDM_INTERFACES",
+        "table": "SAI_PILOT_TECH_STACK",
+        "columnNames": [
+          "OBJECT_ID",
+          "NAME",
+          "TYPE",
+          "PROSPECT_TIER_C",
+          "APS_C",
+          "INDUSTRY",
+          "CLEAN_ACCOUNT_TYPE_C"
+        ]
+      },
+      {
+        "database": "MDM",
+        "schema": "MDM_INTERFACES",
+        "table": "CUSTOMER_PARTY_ACCOUNT_MAP_SFDC",
+        "columnNames": [
+          "SOURCE_SYSTEM_ENTITY_ID",
+          "PARTY_ID",
+          "ACCOUNT_ID",
+          "CUSTOMER_ID_WD"
+        ]
+      }
+    ],
+    "sqlSource": {
+      "queries": [
+        {
+          "sqlText": "SELECT FINAL_INDUSTRY, ACCOUNT_TYPE, COUNT(DISTINCT SOURCE_SYSTEM_ENTITY_ID) AS account_count FROM MDM.MDM_INTERFACES.SFDC_ACCOUNT_CONSOLIDATED_INDUSTRY WHERE FINAL_INDUSTRY IS NOT NULL GROUP BY FINAL_INDUSTRY, ACCOUNT_TYPE ORDER BY account_count DESC",
+          "correspondingQuestion": "How many accounts are in each industry by account type?"
+        },
+        {
+          "sqlText": "SELECT ind.FINAL_INDUSTRY, ind.FINAL_SUBINDUSTRY, ind.ACCOUNT_TYPE, COUNT(DISTINCT ind.SOURCE_SYSTEM_ENTITY_ID) AS account_count FROM MDM.MDM_INTERFACES.SFDC_ACCOUNT_CONSOLIDATED_INDUSTRY ind WHERE ind.FINAL_INDUSTRY IS NOT NULL GROUP BY ind.FINAL_INDUSTRY, ind.FINAL_SUBINDUSTRY, ind.ACCOUNT_TYPE ORDER BY ind.FINAL_INDUSTRY, account_count DESC",
+          "correspondingQuestion": "Show me accounts by industry and subindustry"
+        },
+        {
+          "sqlText": "SELECT ind.FINAL_INDUSTRY, COUNT(DISTINCT ind.SOURCE_SYSTEM_ENTITY_ID) AS total_accounts, COUNT(DISTINCT cb.SOURCE_SYSTEM_ENTITY_ID) AS accounts_with_crunchbase FROM MDM.MDM_INTERFACES.SFDC_ACCOUNT_CONSOLIDATED_INDUSTRY ind LEFT JOIN MDM.MDM_INTERFACES.CRUNCHBASE_MAP_TO_ACCOUNT_SFDC cb ON ind.SOURCE_SYSTEM_ENTITY_ID = cb.SOURCE_SYSTEM_ENTITY_ID WHERE ind.FINAL_INDUSTRY IS NOT NULL GROUP BY ind.FINAL_INDUSTRY ORDER BY total_accounts DESC",
+          "correspondingQuestion": "Which industries have the most accounts with Crunchbase enrichment?"
+        },
+        {
+          "sqlText": "SELECT ind.FINAL_INDUSTRY, sai.PROSPECT_TIER_C, COUNT(DISTINCT ind.SOURCE_SYSTEM_ENTITY_ID) AS account_count, AVG(sai.APS_C) AS avg_aps_score FROM MDM.MDM_INTERFACES.SFDC_ACCOUNT_CONSOLIDATED_INDUSTRY ind LEFT JOIN MDM.MDM_INTERFACES.SAI_PILOT_TECH_STACK sai ON ind.SOURCE_SYSTEM_ENTITY_ID = sai.OBJECT_ID WHERE sai.PROSPECT_TIER_C IS NOT NULL GROUP BY ind.FINAL_INDUSTRY, sai.PROSPECT_TIER_C ORDER BY avg_aps_score DESC",
+          "correspondingQuestion": "What is the average APS score and account count by industry and prospect tier?"
+        },
+        {
+          "sqlText": "SELECT ind.ACCOUNT_TYPE, ind.FINAL_INDUSTRY, TRY_TO_NUMBER(emp.FINAL_EMPLOYEE_COUNT) AS employee_count, COUNT(DISTINCT ind.SOURCE_SYSTEM_ENTITY_ID) AS account_count FROM MDM.MDM_INTERFACES.SFDC_ACCOUNT_CONSOLIDATED_INDUSTRY ind LEFT JOIN MDM.MDM_INTERFACES.SFDC_ACCOUNT_CONSOLIDATED_EMPLOYEE_COUNT emp ON ind.SOURCE_SYSTEM_ENTITY_ID = emp.SOURCE_SYSTEM_ENTITY_ID WHERE ind.FINAL_INDUSTRY IS NOT NULL GROUP BY ind.ACCOUNT_TYPE, ind.FINAL_INDUSTRY, employee_count ORDER BY account_count DESC",
+          "correspondingQuestion": "What is the breakdown of accounts by account type, industry, and employee count?"
+        }
+      ]
+    },
+    "semanticDescription": "360-degree account intelligence semantic view for AEs and SDRs. Combines Salesforce account data with multi-source enrichment including industry classification (MDM-conformed from 7+ sources), employee count (consensus-scored), Crunchbase firmographic linkage, and SAI account priority scoring. Primary use cases: account segmentation, ICP analysis, enrichment coverage reporting, and prospect prioritization.",
+    "metadata": {
+      "warehouse": "SNOWHOUSE"
+    }
+  }
+}
